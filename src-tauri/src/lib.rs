@@ -11,9 +11,6 @@ use tauri::Manager;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             // Initialize database
             let app_data_dir = app
@@ -38,7 +35,6 @@ pub fn run() {
             commands::get_article,
             commands::list_articles,
             commands::delete_draft,
-            commands::export_markdown,
             commands::score_quality,
             commands::scan_sensitive_data,
             commands::list_templates,

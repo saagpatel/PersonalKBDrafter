@@ -2,6 +2,7 @@ use crate::error::AppError;
 use crate::models::{JiraComment, JiraTicket};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use serde_json::Value;
+use std::time::Duration;
 
 pub struct JiraClient {
     base_url: String,
@@ -11,10 +12,15 @@ pub struct JiraClient {
 
 impl JiraClient {
     pub fn new(base_url: String, pat: String) -> Self {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(20))
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new());
+
         Self {
             base_url,
             pat,
-            client: reqwest::Client::new(),
+            client,
         }
     }
 

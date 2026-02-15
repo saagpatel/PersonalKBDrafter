@@ -153,10 +153,78 @@ pub fn delete_article(conn: &Connection, id: i64) -> SqliteResult<()> {
     Ok(())
 }
 
-pub fn update_article_quality_score(conn: &Connection, id: i64, score: u8) -> SqliteResult<()> {
-    conn.execute(
-        "UPDATE kb_articles SET quality_score = ?1, updated_at = datetime('now') WHERE id = ?2",
-        params![score, id],
-    )?;
-    Ok(())
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::NewArticle;
+
+    fn setup_conn() -> Connection {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        conn.execute_batch(include_str!("../../migrations/001_initial.sql"))
+            .expect("apply schema");
+        conn
+    }
+
+    fn sample_article(title: &str) -> NewArticle {
+        NewArticle {
+            ticket_key: Some("TEST-100".to_string()),
+            title: title.to_string(),
+            problem: "Original problem statement".to_string(),
+            solution: "1. First step\n2. Second step\n3. Third step".to_string(),
+            expected_result: Some("System is healthy".to_string()),
+            prerequisites: Some("Admin permissions".to_string()),
+            additional_notes: Some("Initial note".to_string()),
+            tags: vec!["ops".to_string(), "incident".to_string()],
+            content_markdown: format!("# {}\n\n## Problem\n...\n## Solution\n...", title),
+            template_id: Some("tpl-troubleshoot".to_string()),
+        }
+    }
+
+    #[test]
+    fn test_update_article_updates_existing_row() {
+        let conn = setup_conn();
+        let initial = sample_article("Initial Title");
+        let article_id = insert_article(&conn, &initial).expect("insert");
+
+        let updated = NewArticle {
+            title: "Updated Title".to_string(),
+            problem: "Updated problem".to_string(),
+            solution: "Updated solution steps".to_string(),
+            content_markdown: "# Updated Title\n\n## Problem\nUpdated".to_string(),
+            ..sample_article("Updated Title")
+        };
+
+        update_article(&conn, article_id, &updated).expect("update");
+        let article = get_article(&conn, article_id).expect("read back");
+
+        assert_eq!(article.id, article_id);
+        assert_eq!(article.title, "Updated Title");
+        assert_eq!(article.problem, "Updated problem");
+        assert_eq!(article.solution, "Updated solution steps");
+        assert_eq!(article.ticket_key.as_deref(), Some("TEST-100"));
+        assert_eq!(article.tags, vec!["ops".to_string(), "incident".to_string()]);
+    }
+
+    #[test]
+    fn test_list_articles_status_filter() {
+        let conn = setup_conn();
+        let draft_id = insert_article(&conn, &sample_article("Draft Article")).expect("insert draft");
+        let published_id =
+            insert_article(&conn, &sample_article("Published Article")).expect("insert published");
+
+        conn.execute(
+            "UPDATE kb_articles SET status = 'published' WHERE id = ?1",
+            [published_id],
+        )
+        .expect("mark published");
+
+        let published = list_articles(&conn, Some("published".to_string())).expect("list published");
+        assert_eq!(published.len(), 1);
+        assert_eq!(published[0].id, published_id);
+
+        let all = list_articles(&conn, None).expect("list all");
+        assert_eq!(all.len(), 2);
+        assert!(all.iter().any(|a| a.id == draft_id));
+        assert!(all.iter().any(|a| a.id == published_id));
+    }
 }

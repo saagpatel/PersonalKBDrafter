@@ -14,16 +14,6 @@ struct GenerateResponse {
     response: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct TagsResponse {
-    models: Vec<ModelInfo>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ModelInfo {
-    name: String,
-}
-
 /// Check if Ollama is available at the given URL
 pub async fn check_health(url: &str) -> Result<bool, AppError> {
     let endpoint = format!("{}/api/tags", url.trim_end_matches('/'));

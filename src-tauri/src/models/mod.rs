@@ -5,7 +5,6 @@ pub mod quality;
 pub mod template;
 
 pub use article::{Article, ArticleStatus, NewArticle};
-pub use confluence::{ConfluenceSpace, ConversionResult, PublishResult};
 pub use jira::{JiraComment, JiraTicket};
 pub use quality::{FlaggedSection, QualityScore};
 pub use template::Template;

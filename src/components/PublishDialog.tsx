@@ -7,6 +7,7 @@ import type { FlaggedSection } from '../bindings/FlaggedSection';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  articleId: bigint | null;
   markdown: string;
   articleTitle: string;
   confluenceUrl: string;
@@ -16,10 +17,11 @@ interface Props {
 export function PublishDialog({
   isOpen,
   onClose,
+  articleId,
   markdown,
   articleTitle,
   confluenceUrl,
-  onPublishSuccess: _onPublishSuccess,
+  onPublishSuccess,
 }: Props) {
   const [spaces, setSpaces] = useState<ConfluenceSpace[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<string>('');
@@ -71,6 +73,11 @@ export function PublishDialog({
       return;
     }
 
+    if (articleId === null) {
+      setError('Please save your draft before publishing.');
+      return;
+    }
+
     if (sensitiveFlags.length > 0) {
       const confirmed = window.confirm(
         `Found ${sensitiveFlags.length} potential sensitive data issue(s). Do you want to proceed anyway? Review the warnings below before continuing.`
@@ -82,12 +89,17 @@ export function PublishDialog({
     setError(null);
 
     try {
-      // For now, we'll publish without saving to database first
-      // In a real implementation, we'd save the draft first and get an article ID
-      // For this demo, we'll just call a placeholder
+      const numericArticleId = Number(articleId);
+      if (!Number.isSafeInteger(numericArticleId)) {
+        throw new Error('Article ID is too large to publish safely.');
+      }
 
-      alert('Publishing requires saving the article first. Save the draft, then use the publish feature from the article list.');
-      onClose();
+      const result = await invoke<PublishResult>('publish_article', {
+        articleId: numericArticleId,
+        spaceKey: selectedSpace,
+        confluenceUrl,
+      });
+      onPublishSuccess(result);
     } catch (err: any) {
       setError(`Failed to publish: ${err.message || err}`);
     } finally {
@@ -169,15 +181,6 @@ export function PublishDialog({
             </select>
           )}
         </div>
-
-        {/* Note about current limitation */}
-        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
-          <p className="text-blue-800">
-            <strong>Note:</strong> To publish, first save this as a draft. Then you can publish from the article list.
-            Full publish integration is coming soon!
-          </p>
-        </div>
-
         {/* Actions */}
         <div className="flex justify-end gap-2">
           <button

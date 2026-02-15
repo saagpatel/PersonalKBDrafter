@@ -6,14 +6,9 @@ use tauri::State;
 // Simple settings storage for URLs (PATs go in keychain)
 use std::sync::Mutex;
 
+#[derive(Default)]
 pub struct JiraSettings {
     pub base_url: Option<String>,
-}
-
-impl Default for JiraSettings {
-    fn default() -> Self {
-        Self { base_url: None }
-    }
 }
 
 #[tauri::command]

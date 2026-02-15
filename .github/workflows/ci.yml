@@ -31,14 +31,20 @@ jobs:
     - name: Install frontend dependencies
       run: npm ci
 
+    - name: Install cargo-audit
+      run: cargo install cargo-audit --locked
+
     - name: Run Rust tests
       run: cd src-tauri && cargo test --verbose
 
     - name: Run Rust clippy
       run: cd src-tauri && cargo clippy -- -D warnings
 
+    - name: Run Rust dependency audit
+      run: cd src-tauri && cargo audit --deny warnings
+
     - name: Run frontend lint
-      run: npm run lint || true
+      run: npm run lint
 
     - name: Build frontend
       run: npm run build

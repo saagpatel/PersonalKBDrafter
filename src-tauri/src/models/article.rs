@@ -41,13 +41,6 @@ pub enum ArticleStatus {
 }
 
 impl ArticleStatus {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            ArticleStatus::Draft => "draft",
-            ArticleStatus::Published => "published",
-        }
-    }
-
     pub fn from_str(s: &str) -> Result<Self, String> {
         match s {
             "draft" => Ok(ArticleStatus::Draft),

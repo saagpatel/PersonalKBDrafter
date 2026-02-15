@@ -1,10 +1,12 @@
 use crate::error::AppError;
 use crate::models::confluence::{ConfluenceSpace, PublishResult};
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 pub struct ConfluenceClient {
     base_url: String,
     pat: String,
+    client: reqwest::Client,
 }
 
 #[derive(Debug, Serialize)]
@@ -91,7 +93,16 @@ struct VersionInfo {
 
 impl ConfluenceClient {
     pub fn new(base_url: String, pat: String) -> Self {
-        Self { base_url, pat }
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(20))
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new());
+
+        Self {
+            base_url,
+            pat,
+            client,
+        }
     }
 
     /// Test connection to Confluence
@@ -101,8 +112,8 @@ impl ConfluenceClient {
             self.base_url.trim_end_matches('/')
         );
 
-        let client = reqwest::Client::new();
-        let response = client
+        let response = self
+            .client
             .get(&endpoint)
             .header("Authorization", format!("Bearer {}", self.pat))
             .send()
@@ -118,8 +129,8 @@ impl ConfluenceClient {
             self.base_url.trim_end_matches('/')
         );
 
-        let client = reqwest::Client::new();
-        let response = client
+        let response = self
+            .client
             .get(&endpoint)
             .header("Authorization", format!("Bearer {}", self.pat))
             .send()
@@ -188,8 +199,8 @@ impl ConfluenceClient {
             metadata,
         };
 
-        let client = reqwest::Client::new();
-        let response = client
+        let response = self
+            .client
             .post(&endpoint)
             .header("Authorization", format!("Bearer {}", self.pat))
             .header("Content-Type", "application/json")
@@ -242,8 +253,8 @@ impl ConfluenceClient {
             page_id
         );
 
-        let client = reqwest::Client::new();
-        let response = client
+        let response = self
+            .client
             .get(&endpoint)
             .header("Authorization", format!("Bearer {}", self.pat))
             .send()
@@ -275,8 +286,8 @@ impl ConfluenceClient {
             page_id
         );
 
-        let client = reqwest::Client::new();
-        let response = client
+        let response = self
+            .client
             .get(&endpoint)
             .header("Authorization", format!("Bearer {}", self.pat))
             .send()
@@ -323,8 +334,8 @@ impl ConfluenceClient {
             },
         };
 
-        let client = reqwest::Client::new();
-        let response = client
+        let response = self
+            .client
             .put(&endpoint)
             .header("Authorization", format!("Bearer {}", self.pat))
             .header("Content-Type", "application/json")

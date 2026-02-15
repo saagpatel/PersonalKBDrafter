@@ -31,7 +31,7 @@ function App() {
   const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [articleTitle, setArticleTitle] = useState("");
   const [publishSuccess, setPublishSuccess] = useState<PublishResult | null>(null);
-  const [_currentArticleId, setCurrentArticleId] = useState<bigint | null>(null); // Used to track saved draft for future publish
+  const [currentArticleId, setCurrentArticleId] = useState<bigint | null>(null);
   const [showDraftsList, setShowDraftsList] = useState(false);
 
   const { ollamaUrl, selectedModel, confluenceUrl } = useSettingsStore();
@@ -44,7 +44,7 @@ function App() {
     setMarkdown(template.output_structure);
   };
 
-  const handleSave = async () => {
+  const saveDraft = async (silent = false): Promise<Article | null> => {
     setIsSaving(true);
     try {
       const parsed = parseMarkdownToArticle(markdown);
@@ -52,14 +52,12 @@ function App() {
       // Validate required fields
       if (!parsed.problem || parsed.problem.trim() === '') {
         alert('Problem description is required. Please add a "## Problem" section to your article.');
-        setIsSaving(false);
-        return;
+        return null;
       }
 
       if (!parsed.solution || parsed.solution.trim() === '') {
         alert('Solution is required. Please add a "## Solution" section to your article.');
-        setIsSaving(false);
-        return;
+        return null;
       }
 
       const newArticle = {
@@ -75,28 +73,46 @@ function App() {
         templateId: selectedTemplate?.id ?? null,
       };
 
-      const savedArticle = await invoke<Article>('save_draft', { article: newArticle });
+      const numericArticleId = currentArticleId !== null ? Number(currentArticleId) : null;
+      const savedArticle = await invoke<Article>('save_draft', {
+        article: newArticle,
+        articleId: numericArticleId,
+      });
       setCurrentArticleId(savedArticle.id);
-      alert(`Draft saved successfully! ID: ${savedArticle.id}`);
+      if (!silent) {
+        alert(`Draft saved successfully! ID: ${savedArticle.id}`);
+      }
+      return savedArticle;
     } catch (error: any) {
       console.error('Failed to save:', error);
       alert(`Failed to save draft: ${error.message || error}`);
+      return null;
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handlePublish = () => {
+  const handleSave = async (): Promise<void> => {
+    await saveDraft(false);
+  };
+
+  const handlePublish = async () => {
     if (!confluenceConnected) {
       alert('Please connect to Confluence in Settings first');
       return;
     }
 
+    const savedArticle = await saveDraft(true);
+    if (!savedArticle) {
+      return;
+    }
+
     // Extract title from markdown (first heading or first line)
-    const firstLine = markdown.split('\n')[0];
-    const title = firstLine.startsWith('#')
+    const firstLine = savedArticle.content_markdown.split('\n')[0] ?? '';
+    const extractedTitle = firstLine.startsWith('#')
       ? firstLine.replace(/^#+\s*/, '').trim()
-      : firstLine.trim() ?? 'Untitled Article';
+      : firstLine.trim();
+    const title = extractedTitle || savedArticle.title || 'Untitled Article';
 
     setArticleTitle(title);
     setShowPublishDialog(true);
@@ -327,6 +343,7 @@ ${ticket.labels.join(', ')}`;
       <PublishDialog
         isOpen={showPublishDialog}
         onClose={() => setShowPublishDialog(false)}
+        articleId={currentArticleId}
         markdown={markdown}
         articleTitle={articleTitle}
         confluenceUrl={confluenceUrl}

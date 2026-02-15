@@ -5,11 +5,20 @@ use crate::services::{quality, sensitive_data};
 use tauri::State;
 
 #[tauri::command]
-pub async fn save_draft(article: NewArticle, db: State<'_, DbPool>) -> Result<Article, AppError> {
+pub async fn save_draft(
+    article: NewArticle,
+    article_id: Option<i64>,
+    db: State<'_, DbPool>,
+) -> Result<Article, AppError> {
     let pool = db.inner().clone();
     tokio::task::spawn_blocking(move || -> Result<Article, AppError> {
         let conn = pool.get()?;
-        let id = articles::insert_article(&conn, &article)?;
+        let id = if let Some(existing_id) = article_id {
+            articles::update_article(&conn, existing_id, &article)?;
+            existing_id
+        } else {
+            articles::insert_article(&conn, &article)?
+        };
         Ok(articles::get_article(&conn, id)?)
     })
     .await
@@ -50,27 +59,6 @@ pub async fn delete_draft(id: i64, db: State<'_, DbPool>) -> Result<(), AppError
     })
     .await
     .map_err(|e| AppError::Internal(e.to_string()))?
-}
-
-#[tauri::command]
-pub async fn export_markdown(
-    id: i64,
-    path: String,
-    db: State<'_, DbPool>,
-) -> Result<(), AppError> {
-    let pool = db.inner().clone();
-    let article = tokio::task::spawn_blocking(move || -> Result<Article, AppError> {
-        let conn = pool.get()?;
-        Ok(articles::get_article(&conn, id)?)
-    })
-    .await
-    .map_err(|e| AppError::Internal(e.to_string()))??;
-
-    // Write markdown to file
-    std::fs::write(&path, &article.content_markdown)
-        .map_err(|e| AppError::Internal(format!("Failed to write file: {}", e)))?;
-
-    Ok(())
 }
 
 #[tauri::command]

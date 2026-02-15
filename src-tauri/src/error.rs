@@ -21,9 +21,6 @@ pub enum AppError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
 
-    #[error("Conversion error: {0}")]
-    Conversion(String),
-
     #[error("{0}")]
     Internal(String),
 }
@@ -48,7 +45,6 @@ impl AppError {
             Self::Database(_) => "database",
             Self::OllamaUnavailable { .. } => "ollama_unavailable",
             Self::Network(_) => "network",
-            Self::Conversion(_) => "conversion",
             Self::Internal(_) => "internal",
         }
     }

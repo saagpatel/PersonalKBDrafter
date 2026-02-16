@@ -150,10 +150,13 @@ Then this tool automates the tedious parts while keeping you in control.
 
 ```bash
 # Install frontend dependencies
-npm install
+npm ci
 
-# Run in development mode
+# Normal dev mode (fast rebuilds, more disk usage over time)
 npm run tauri dev
+
+# Lean dev mode (temporary build caches, auto-clean on exit)
+npm run dev:lean
 
 # Build for production
 npm run tauri build
@@ -161,6 +164,34 @@ npm run tauri build
 # Run Rust tests
 cd src-tauri && cargo test
 ```
+
+### Normal Dev vs Lean Dev
+
+- `npm run tauri dev`
+  - Uses default local caches in the repo.
+  - Faster subsequent startup/rebuilds.
+  - Grows disk usage over time (`src-tauri/target`, `node_modules/.vite`).
+
+- `npm run dev:lean`
+  - Starts the same Tauri + Vite development flow.
+  - Redirects heavy build caches to a temporary location.
+  - Automatically removes temporary caches when the process exits.
+  - Uses less persistent disk space, but cold starts are slower.
+
+### Cleanup Commands
+
+```bash
+# Remove heavy build artifacts only (keep dependencies for speed)
+npm run clean:heavy
+
+# Remove all reproducible local caches, including dependencies
+npm run clean:full
+```
+
+Disk/speed tradeoff in plain language:
+- Keep `node_modules` if you want reasonable startup speed day-to-day.
+- Use `clean:heavy` regularly to reclaim most build bloat safely.
+- Use `clean:full` only when you want a full local reset and accept a slower next install/build.
 
 ### Project Structure
 

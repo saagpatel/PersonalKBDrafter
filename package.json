@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:lean": "bash ./scripts/lean-dev.sh",
     "lint": "tsc --noEmit",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "clean": "node -e \"const fs=require('fs');const paths=['node_modules','dist','dist-ssr','.codex_audit','src-tauri/target'];for(const p of paths){fs.rmSync(p,{recursive:true,force:true});}const walk=(d)=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){const f=d+'/'+e.name;if(e.isDirectory())walk(f);else if(e.name==='.DS_Store')fs.rmSync(f,{force:true});}};walk('.');\"",
+    "clean:heavy": "bash ./scripts/clean-heavy.sh",
+    "clean:full": "bash ./scripts/clean-full.sh",
+    "clean": "npm run clean:full",
     "tauri": "tauri"
   },
   "dependencies": {

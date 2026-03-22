@@ -1,5 +1,12 @@
 # codex-os-managed
-pnpm git:guard:all
-pnpm perf:bundle
-pnpm perf:build
-pnpm perf:assets
+npm run check:prereqs
+npm run git:guard:all
+npm run lint
+npm run build
+cd src-tauri && cargo test --verbose
+cd src-tauri && cargo clippy -- -D warnings
+cd src-tauri && cargo audit --deny warnings
+npm run perf:bundle
+npm run perf:build
+npm run perf:assets
+npm run tauri build

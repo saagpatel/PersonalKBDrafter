@@ -21,32 +21,37 @@ Then this tool automates the tedious parts while keeping you in control.
 ## Key Features
 
 ### 🎯 **Smart Drafting**
+
 - Fetches Jira ticket details (summary, description, comments)
 - Uses local Ollama AI models to generate structured KB articles
 - Follows customizable templates for consistency
 - Automatically structures content (Problem, Solution, Prerequisites, etc.)
 
 ### 🔒 **Security First**
+
 - Scans for sensitive data (API keys, passwords, tokens, PII) before publishing
 - Flags potential security issues for review
 - Keeps your LLM completely local—no cloud API calls
 
 ### ✅ **Quality Scoring**
+
 - Automated quality assessment of drafted articles
 - Scores based on completeness, clarity, structure, and detail
 - Ensures documentation meets your standards
 
 ### 📝 **Full Workflow**
+
 - Save drafts and iterate before publishing
 - Live markdown preview
 - Direct Confluence publishing with proper formatting
 - Tracks publication status and links
 
 ### ⚙️ **Flexible Setup**
+
 - Works with any Ollama-compatible model
 - Customizable article templates
-- Supports Jira Cloud and Server
-- Confluence Cloud integration
+- Supports Jira and Confluence Data Center style PAT workflows
+- Stores Jira and Confluence tokens in the OS keychain
 
 ## What You'd Use It For
 
@@ -63,8 +68,8 @@ Then this tool automates the tedious parts while keeping you in control.
 ### Prerequisites
 
 - **Ollama** running locally with a model installed (e.g., `llama3.2:3b`, `mistral`)
-- **Jira** account with API access (Personal Access Token)
-- **Confluence** account with API access (Personal Access Token)
+- **Jira Data Center** account with API access (Personal Access Token)
+- **Confluence Data Center** account with API access (Personal Access Token)
 - macOS, Windows, or Linux
 
 ### Installation
@@ -98,8 +103,7 @@ Then this tool automates the tedious parts while keeping you in control.
 ### Keyboard Shortcuts
 
 - `Cmd/Ctrl + S` - Save draft
-- `Cmd/Ctrl + P` - Toggle preview
-- `Cmd/Ctrl + K` - Search Jira tickets
+- `Cmd/Ctrl + Shift + P` - Toggle preview
 - `Cmd/Ctrl + D` - Show drafts list
 
 ## Technology Stack
@@ -149,6 +153,9 @@ Then this tool automates the tedious parts while keeping you in control.
 ### Setup
 
 ```bash
+# Check local prerequisites
+npm run check:prereqs
+
 # Install frontend dependencies
 npm ci
 
@@ -163,6 +170,9 @@ npm run tauri build
 
 # Run Rust tests
 cd src-tauri && cargo test
+
+# Run the local verification bundle
+bash .codex/scripts/run_verify_commands.sh
 ```
 
 ### Normal Dev vs Lean Dev
@@ -189,6 +199,7 @@ npm run clean:full
 ```
 
 Disk/speed tradeoff in plain language:
+
 - Keep `node_modules` if you want reasonable startup speed day-to-day.
 - Use `clean:heavy` regularly to reclaim most build bloat safely.
 - Use `clean:full` only when you want a full local reset and accept a slower next install/build.
@@ -219,6 +230,13 @@ PersonalKBDrafter/
 - **Credential storage**: Jira/Confluence tokens stored in OS keychain
 - **Sensitive data detection**: Regex-based scanning for common secrets
 - **Manual review**: You approve everything before it goes to Confluence
+
+## Current Validation Scope
+
+- Local launch is validated with `npm`, Vite, and Tauri 2 on macOS.
+- Jira parsing supports plain-text fields and Atlassian Document Format (ADF) content.
+- Jira PATs and Confluence PATs are stored in the OS keychain, and the Jira base URL persists in the local SQLite app database.
+- End-to-end live smoke testing still requires a safe Jira test ticket, a non-production Confluence space, and valid service credentials on the machine running the app.
 
 ## Roadmap
 

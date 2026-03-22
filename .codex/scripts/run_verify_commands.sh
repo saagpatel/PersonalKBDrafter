@@ -2,6 +2,7 @@
 set -euo pipefail
 
 COMMANDS_FILE="${1:-.codex/verify.commands}"
+ROOT_DIR="$(pwd)"
 
 if [[ ! -f "$COMMANDS_FILE" ]]; then
   echo "Missing $COMMANDS_FILE"
@@ -13,5 +14,8 @@ while IFS= read -r cmd || [[ -n "$cmd" ]]; do
   [[ "$cmd" =~ ^[[:space:]]*# ]] && continue
 
   echo ">> $cmd"
-  eval "$cmd"
+  (
+    cd "$ROOT_DIR"
+    eval "$cmd"
+  )
 done < "$COMMANDS_FILE"

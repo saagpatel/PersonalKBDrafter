@@ -146,6 +146,7 @@ export function SettingsModal({ isOpen, onClose }: Props) {
     try {
       await invoke("disconnect_confluence");
       setConfluenceConnected(false);
+      persistConfluenceUrl("");
       setConfluenceUrl("");
       setConfluencePat("");
       setConfluenceTestResult(null);

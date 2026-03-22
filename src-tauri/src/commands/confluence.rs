@@ -1,8 +1,58 @@
-use crate::db::DbPool;
+use crate::db::{settings as db_settings, DbPool};
 use crate::error::AppError;
 use crate::models::confluence::{ConfluenceSpace, PublishResult};
 use crate::services::{confluence::ConfluenceClient, markdown_to_confluence, tokens};
+use std::sync::Mutex;
 use tauri::State;
+
+#[derive(Default)]
+pub struct ConfluenceSettings {
+    pub base_url: Option<String>,
+}
+
+async fn get_confluence_base_url(
+    settings: &State<'_, Mutex<ConfluenceSettings>>,
+    db: &State<'_, DbPool>,
+) -> Result<String, AppError> {
+    {
+        let settings = settings
+            .lock()
+            .map_err(|e| AppError::Internal(format!("Failed to lock settings: {}", e)))?;
+        if let Some(base_url) = settings.base_url.clone() {
+            return Ok(base_url);
+        }
+    }
+
+    let pool = db.inner().clone();
+    let base_url = tokio::task::spawn_blocking(move || -> Result<_, AppError> {
+        let conn = pool.get()?;
+        Ok(db_settings::get_setting(&conn, "confluence.base_url")?)
+    })
+    .await
+    .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))??;
+
+    let base_url =
+        base_url.ok_or_else(|| AppError::Internal("Confluence not configured".to_string()))?;
+
+    let mut settings = settings
+        .lock()
+        .map_err(|e| AppError::Internal(format!("Failed to lock settings: {}", e)))?;
+    settings.base_url = Some(base_url.clone());
+
+    Ok(base_url)
+}
+
+async fn resolve_confluence_base_url(
+    requested_base_url: String,
+    settings: &State<'_, Mutex<ConfluenceSettings>>,
+    db: &State<'_, DbPool>,
+) -> Result<String, AppError> {
+    if !requested_base_url.trim().is_empty() {
+        return Ok(requested_base_url);
+    }
+
+    get_confluence_base_url(settings, db).await
+}
 
 /// Test Confluence connection
 #[tauri::command]
@@ -17,38 +67,79 @@ pub async fn test_confluence_connection(
 /// Save Confluence configuration
 #[tauri::command]
 pub async fn save_confluence_config(
-    _base_url: String,
+    base_url: String,
     pat: String,
+    settings: State<'_, Mutex<ConfluenceSettings>>,
+    db: State<'_, DbPool>,
 ) -> Result<(), AppError> {
     // Store PAT in keychain
     tokens::store_token("confluence", &pat)?;
 
-    // Store base URL in settings (we could use a settings table, but for now just return success)
-    // The frontend will persist the base URL in localStorage
+    let base_url_for_db = base_url.clone();
+    let pool = db.inner().clone();
+    tokio::task::spawn_blocking(move || -> Result<(), AppError> {
+        let conn = pool.get()?;
+        Ok(db_settings::set_setting(
+            &conn,
+            "confluence.base_url",
+            &base_url_for_db,
+        )?)
+    })
+    .await
+    .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))??;
+
+    let mut settings = settings
+        .lock()
+        .map_err(|e| AppError::Internal(format!("Failed to lock settings: {}", e)))?;
+    settings.base_url = Some(base_url);
 
     Ok(())
 }
 
 /// Disconnect from Confluence
 #[tauri::command]
-pub async fn disconnect_confluence() -> Result<(), AppError> {
+pub async fn disconnect_confluence(
+    settings: State<'_, Mutex<ConfluenceSettings>>,
+    db: State<'_, DbPool>,
+) -> Result<(), AppError> {
     tokens::delete_token("confluence")?;
+
+    let pool = db.inner().clone();
+    tokio::task::spawn_blocking(move || -> Result<(), AppError> {
+        let conn = pool.get()?;
+        Ok(db_settings::delete_setting(&conn, "confluence.base_url")?)
+    })
+    .await
+    .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))??;
+
+    let mut settings = settings
+        .lock()
+        .map_err(|e| AppError::Internal(format!("Failed to lock settings: {}", e)))?;
+    settings.base_url = None;
+
     Ok(())
 }
 
 /// Get Confluence connection status
 #[tauri::command]
-pub async fn get_confluence_connection_status() -> Result<bool, AppError> {
-    // Check if token exists
-    match tokens::get_token("confluence") {
-        Ok(_) => Ok(true),
-        Err(_) => Ok(false),
-    }
+pub async fn get_confluence_connection_status(
+    settings: State<'_, Mutex<ConfluenceSettings>>,
+    db: State<'_, DbPool>,
+) -> Result<bool, AppError> {
+    let has_url = get_confluence_base_url(&settings, &db).await.is_ok();
+    let has_token = tokens::get_token("confluence").is_ok();
+
+    Ok(has_url && has_token)
 }
 
 /// List available Confluence spaces
 #[tauri::command]
-pub async fn list_confluence_spaces(confluence_url: String) -> Result<Vec<ConfluenceSpace>, AppError> {
+pub async fn list_confluence_spaces(
+    confluence_url: String,
+    settings: State<'_, Mutex<ConfluenceSettings>>,
+    db: State<'_, DbPool>,
+) -> Result<Vec<ConfluenceSpace>, AppError> {
+    let confluence_url = resolve_confluence_base_url(confluence_url, &settings, &db).await?;
     let pat = tokens::get_token("confluence")?;
     let client = ConfluenceClient::new(confluence_url, pat);
     client.list_spaces().await
@@ -60,8 +151,10 @@ pub async fn publish_article(
     article_id: i64,
     space_key: String,
     confluence_url: String,
+    settings: State<'_, Mutex<ConfluenceSettings>>,
     db: State<'_, DbPool>,
 ) -> Result<PublishResult, AppError> {
+    let confluence_url = resolve_confluence_base_url(confluence_url, &settings, &db).await?;
     let pat = tokens::get_token("confluence")?;
 
     // Get article from database
@@ -107,8 +200,10 @@ pub async fn publish_article(
 pub async fn update_published_article(
     article_id: i64,
     confluence_url: String,
+    settings: State<'_, Mutex<ConfluenceSettings>>,
     db: State<'_, DbPool>,
 ) -> Result<PublishResult, AppError> {
+    let confluence_url = resolve_confluence_base_url(confluence_url, &settings, &db).await?;
     let pat = tokens::get_token("confluence")?;
 
     // Get article from database

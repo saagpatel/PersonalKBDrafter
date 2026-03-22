@@ -235,7 +235,7 @@ PersonalKBDrafter/
 
 - Local launch is validated with `npm`, Vite, and Tauri 2 on macOS.
 - Jira parsing supports plain-text fields and Atlassian Document Format (ADF) content.
-- Jira PATs and Confluence PATs are stored in the OS keychain, and the Jira base URL persists in the local SQLite app database.
+- Jira PATs and Confluence PATs are stored in the OS keychain, and both service base URLs persist in the local SQLite app database.
 - End-to-end live smoke testing still requires a safe Jira test ticket, a non-production Confluence space, and valid service credentials on the machine running the app.
 
 ## Roadmap

@@ -5,6 +5,7 @@ mod models;
 mod services;
 
 use commands::jira::JiraSettings;
+use commands::confluence::ConfluenceSettings;
 use std::sync::Mutex;
 use tauri::Manager;
 
@@ -26,6 +27,7 @@ pub fn run() {
 
             // Initialize Jira settings
             app.manage(Mutex::new(JiraSettings::default()));
+            app.manage(Mutex::new(ConfluenceSettings::default()));
 
             Ok(())
         })

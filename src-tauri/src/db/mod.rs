@@ -1,4 +1,5 @@
 pub mod articles;
+pub mod settings;
 pub mod templates;
 
 use r2d2::Pool;
@@ -37,6 +38,10 @@ fn run_migrations(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
     // Migration 001: Initial schema
     let migration_001 = include_str!("../../migrations/001_initial.sql");
     apply_migration(conn, "001_initial.sql", migration_001)?;
+
+    // Migration 002: App settings
+    let migration_002 = include_str!("../../migrations/002_app_settings.sql");
+    apply_migration(conn, "002_app_settings.sql", migration_002)?;
 
     Ok(())
 }

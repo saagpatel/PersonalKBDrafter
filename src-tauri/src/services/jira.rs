@@ -149,12 +149,12 @@ impl JiraClient {
 
         let fields = &json["fields"];
 
-        let summary = fields["summary"]
-            .as_str()
+        let summary = extract_plain_text(&fields["summary"])
             .ok_or_else(|| AppError::Internal("Missing summary".to_string()))?
+            .trim()
             .to_string();
 
-        let description = fields["description"].as_str().map(|s| s.to_string());
+        let description = extract_plain_text(&fields["description"]);
 
         let status = fields["status"]["name"]
             .as_str()
@@ -223,10 +223,8 @@ impl JiraClient {
         comments_array
             .iter()
             .filter_map(|comment| {
-                let author = comment["author"]["displayName"]
-                    .as_str()?
-                    .to_string();
-                let body = comment["body"].as_str()?.to_string();
+                let author = extract_author_name(&comment["author"])?;
+                let body = extract_plain_text(&comment["body"])?;
                 let created = comment["created"].as_str()?.to_string();
 
                 Some(JiraComment {
@@ -236,6 +234,80 @@ impl JiraClient {
                 })
             })
             .collect()
+    }
+}
+
+fn extract_author_name(author: &Value) -> Option<String> {
+    author["displayName"]
+        .as_str()
+        .or_else(|| author["name"].as_str())
+        .or_else(|| author["accountId"].as_str())
+        .map(|value| value.to_string())
+}
+
+fn extract_plain_text(value: &Value) -> Option<String> {
+    match value {
+        Value::Null => None,
+        Value::String(text) => Some(text.clone()),
+        Value::Object(map) => {
+            let mut parts = Vec::new();
+            append_adf_text(value, &mut parts);
+
+            if !parts.is_empty() {
+                Some(parts.join("").trim().to_string())
+            } else {
+                map.get("text")
+                    .and_then(Value::as_str)
+                    .map(|text| text.to_string())
+            }
+        }
+        Value::Array(items) => {
+            let mut parts = Vec::new();
+            for item in items {
+                if let Some(text) = extract_plain_text(item) {
+                    if !text.is_empty() {
+                        parts.push(text);
+                    }
+                }
+            }
+
+            if parts.is_empty() {
+                None
+            } else {
+                Some(parts.join("\n"))
+            }
+        }
+        other => Some(other.to_string()),
+    }
+}
+
+fn append_adf_text(value: &Value, parts: &mut Vec<String>) {
+    let Value::Object(map) = value else {
+        return;
+    };
+
+    if let Some(text) = map.get("text").and_then(Value::as_str) {
+        parts.push(text.to_string());
+    }
+
+    if map.get("type").and_then(Value::as_str) == Some("hardBreak") {
+        parts.push("\n".to_string());
+    }
+
+    if let Some(content) = map.get("content").and_then(Value::as_array) {
+        let mut child_parts = Vec::new();
+        for child in content {
+            append_adf_text(child, &mut child_parts);
+        }
+
+        if !child_parts.is_empty() {
+            parts.push(child_parts.join(""));
+            match map.get("type").and_then(Value::as_str) {
+                Some("paragraph") | Some("heading") | Some("bulletList") | Some("orderedList")
+                | Some("listItem") => parts.push("\n".to_string()),
+                _ => {}
+            }
+        }
     }
 }
 
@@ -276,5 +348,54 @@ mod tests {
         assert_eq!(ticket.labels, vec!["bug", "urgent"]);
         assert_eq!(ticket.comments.len(), 1);
         assert_eq!(ticket.comments[0].author, "John Doe");
+    }
+
+    #[test]
+    fn test_parse_ticket_supports_adf_description_and_comments() {
+        let client = JiraClient::new("http://test".to_string(), "token".to_string());
+
+        let json = serde_json::json!({
+            "key": "TEST-456",
+            "fields": {
+                "summary": "ADF issue",
+                "description": {
+                    "type": "doc",
+                    "content": [{
+                        "type": "paragraph",
+                        "content": [
+                            { "type": "text", "text": "Line 1" },
+                            { "type": "hardBreak" },
+                            { "type": "text", "text": "Line 2" }
+                        ]
+                    }]
+                },
+                "status": { "name": "Resolved" },
+                "priority": { "name": "Medium" },
+                "resolution": { "name": "Done" },
+                "labels": [],
+                "components": [],
+                "comment": {
+                    "comments": [{
+                        "author": { "accountId": "abc-123" },
+                        "body": {
+                            "type": "doc",
+                            "content": [{
+                                "type": "paragraph",
+                                "content": [{ "type": "text", "text": "ADF comment body" }]
+                            }]
+                        },
+                        "created": "2024-01-01T00:00:00.000Z"
+                    }]
+                },
+                "created": "2024-01-01T00:00:00.000Z",
+                "updated": "2024-01-02T00:00:00.000Z"
+            }
+        });
+
+        let ticket = client.parse_ticket(&json).unwrap();
+        assert_eq!(ticket.description.as_deref(), Some("Line 1\nLine 2"));
+        assert_eq!(ticket.comments.len(), 1);
+        assert_eq!(ticket.comments[0].author, "abc-123");
+        assert_eq!(ticket.comments[0].body, "ADF comment body");
     }
 }

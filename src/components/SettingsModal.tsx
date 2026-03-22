@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { invoke } from '../lib/tauri';
-import { useAuthStore } from '../stores/authStore';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useState, useEffect } from "react";
+import { invoke } from "../lib/tauri";
+import { useAuthStore } from "../stores/authStore";
+import { useSettingsStore } from "../stores/settingsStore";
 
 interface Props {
   isOpen: boolean;
@@ -9,20 +9,44 @@ interface Props {
 }
 
 export function SettingsModal({ isOpen, onClose }: Props) {
-  const [jiraUrl, setJiraUrl] = useState('');
-  const [jiraPat, setJiraPat] = useState('');
+  const [jiraUrl, setJiraUrl] = useState("");
+  const [jiraPat, setJiraPat] = useState("");
   const [testingJira, setTestingJira] = useState(false);
-  const [jiraTestResult, setJiraTestResult] = useState<'success' | 'error' | null>(null);
+  const [jiraTestResult, setJiraTestResult] = useState<
+    "success" | "error" | null
+  >(null);
 
-  const [confluenceUrl, setConfluenceUrl] = useState('');
-  const [confluencePat, setConfluencePat] = useState('');
+  const [confluenceUrl, setConfluenceUrl] = useState("");
+  const [confluencePat, setConfluencePat] = useState("");
   const [testingConfluence, setTestingConfluence] = useState(false);
-  const [confluenceTestResult, setConfluenceTestResult] = useState<'success' | 'error' | null>(null);
+  const [confluenceTestResult, setConfluenceTestResult] = useState<
+    "success" | "error" | null
+  >(null);
 
-  const { ollamaUrl, setOllamaUrl, selectedModel, setSelectedModel, confluenceUrl: storedConfluenceUrl, setConfluenceUrl: persistConfluenceUrl } = useSettingsStore();
-  const { jiraConnected, setJiraConnected, confluenceConnected, setConfluenceConnected } = useAuthStore();
+  const {
+    ollamaUrl,
+    setOllamaUrl,
+    selectedModel,
+    setSelectedModel,
+    jiraUrl: storedJiraUrl,
+    setJiraUrl: persistJiraUrl,
+    confluenceUrl: storedConfluenceUrl,
+    setConfluenceUrl: persistConfluenceUrl,
+  } = useSettingsStore();
+  const {
+    jiraConnected,
+    setJiraConnected,
+    confluenceConnected,
+    setConfluenceConnected,
+  } = useAuthStore();
 
   // Initialize local state from stored settings
+  useEffect(() => {
+    if (storedJiraUrl) {
+      setJiraUrl(storedJiraUrl);
+    }
+  }, [storedJiraUrl]);
+
   useEffect(() => {
     if (storedConfluenceUrl) {
       setConfluenceUrl(storedConfluenceUrl);
@@ -38,7 +62,7 @@ export function SettingsModal({ isOpen, onClose }: Props) {
 
   const handleTestJira = async () => {
     if (!jiraUrl || !jiraPat) {
-      alert('Please enter both Jira URL and PAT');
+      alert("Please enter both Jira URL and PAT");
       return;
     }
 
@@ -46,24 +70,25 @@ export function SettingsModal({ isOpen, onClose }: Props) {
     setJiraTestResult(null);
 
     try {
-      const result = await invoke<boolean>('test_jira_connection', {
+      const result = await invoke<boolean>("test_jira_connection", {
         baseUrl: jiraUrl,
         pat: jiraPat,
       });
 
       if (result) {
-        setJiraTestResult('success');
+        setJiraTestResult("success");
         // Save configuration
-        await invoke('save_jira_config', {
+        await invoke("save_jira_config", {
           baseUrl: jiraUrl,
           pat: jiraPat,
         });
+        persistJiraUrl(jiraUrl);
         setJiraConnected(true, jiraUrl);
-        setJiraPat(''); // Clear PAT from state for security
+        setJiraPat(""); // Clear PAT from state for security
       }
     } catch (error) {
-      console.error('Jira connection test failed:', error);
-      setJiraTestResult('error');
+      console.error("Jira connection test failed:", error);
+      setJiraTestResult("error");
     } finally {
       setTestingJira(false);
     }
@@ -71,19 +96,20 @@ export function SettingsModal({ isOpen, onClose }: Props) {
 
   const handleDisconnectJira = async () => {
     try {
-      await invoke('disconnect_jira');
+      await invoke("disconnect_jira");
+      persistJiraUrl("");
       setJiraConnected(false);
-      setJiraUrl('');
-      setJiraPat('');
+      setJiraUrl("");
+      setJiraPat("");
       setJiraTestResult(null);
     } catch (error) {
-      console.error('Failed to disconnect Jira:', error);
+      console.error("Failed to disconnect Jira:", error);
     }
   };
 
   const handleTestConfluence = async () => {
     if (!confluenceUrl || !confluencePat) {
-      alert('Please enter both Confluence URL and PAT');
+      alert("Please enter both Confluence URL and PAT");
       return;
     }
 
@@ -91,26 +117,26 @@ export function SettingsModal({ isOpen, onClose }: Props) {
     setConfluenceTestResult(null);
 
     try {
-      const result = await invoke<boolean>('test_confluence_connection', {
+      const result = await invoke<boolean>("test_confluence_connection", {
         baseUrl: confluenceUrl,
         pat: confluencePat,
       });
 
       if (result) {
-        setConfluenceTestResult('success');
+        setConfluenceTestResult("success");
         // Save configuration
-        await invoke('save_confluence_config', {
+        await invoke("save_confluence_config", {
           baseUrl: confluenceUrl,
           pat: confluencePat,
         });
         // Persist URL to settings store
         persistConfluenceUrl(confluenceUrl);
         setConfluenceConnected(true, confluenceUrl);
-        setConfluencePat(''); // Clear PAT from state for security
+        setConfluencePat(""); // Clear PAT from state for security
       }
     } catch (error) {
-      console.error('Confluence connection test failed:', error);
-      setConfluenceTestResult('error');
+      console.error("Confluence connection test failed:", error);
+      setConfluenceTestResult("error");
     } finally {
       setTestingConfluence(false);
     }
@@ -118,13 +144,13 @@ export function SettingsModal({ isOpen, onClose }: Props) {
 
   const handleDisconnectConfluence = async () => {
     try {
-      await invoke('disconnect_confluence');
+      await invoke("disconnect_confluence");
       setConfluenceConnected(false);
-      setConfluenceUrl('');
-      setConfluencePat('');
+      setConfluenceUrl("");
+      setConfluencePat("");
       setConfluenceTestResult(null);
     } catch (error) {
-      console.error('Failed to disconnect Confluence:', error);
+      console.error("Failed to disconnect Confluence:", error);
     }
   };
 
@@ -158,7 +184,10 @@ export function SettingsModal({ isOpen, onClose }: Props) {
             {!jiraConnected ? (
               <div className="space-y-3">
                 <div>
-                  <label htmlFor="jiraUrl" className="block text-sm font-medium mb-1">
+                  <label
+                    htmlFor="jiraUrl"
+                    className="block text-sm font-medium mb-1"
+                  >
                     Jira Base URL
                   </label>
                   <input
@@ -172,7 +201,10 @@ export function SettingsModal({ isOpen, onClose }: Props) {
                 </div>
 
                 <div>
-                  <label htmlFor="jiraPat" className="block text-sm font-medium mb-1">
+                  <label
+                    htmlFor="jiraPat"
+                    className="block text-sm font-medium mb-1"
+                  >
                     Personal Access Token
                   </label>
                   <input
@@ -193,20 +225,25 @@ export function SettingsModal({ isOpen, onClose }: Props) {
                   disabled={testingJira || !jiraUrl || !jiraPat}
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {testingJira ? 'Testing...' : 'Test & Save Connection'}
+                  {testingJira ? "Testing..." : "Test & Save Connection"}
                 </button>
 
-                {jiraTestResult === 'success' && (
-                  <p className="text-sm text-green-600">✓ Connection successful!</p>
+                {jiraTestResult === "success" && (
+                  <p className="text-sm text-green-600">
+                    ✓ Connection successful!
+                  </p>
                 )}
-                {jiraTestResult === 'error' && (
-                  <p className="text-sm text-red-600">✗ Connection failed. Check URL and PAT.</p>
+                {jiraTestResult === "error" && (
+                  <p className="text-sm text-red-600">
+                    ✗ Connection failed. Check URL and PAT.
+                  </p>
                 )}
               </div>
             ) : (
               <div>
                 <p className="text-sm text-gray-600 mb-2">
-                  Connected to Jira. Your PAT is stored securely in the system keychain.
+                  Connected to Jira. Your PAT is stored securely in the system
+                  keychain.
                 </p>
                 <button
                   onClick={handleDisconnectJira}
@@ -232,7 +269,10 @@ export function SettingsModal({ isOpen, onClose }: Props) {
             {!confluenceConnected ? (
               <div className="space-y-3">
                 <div>
-                  <label htmlFor="confluenceUrl" className="block text-sm font-medium mb-1">
+                  <label
+                    htmlFor="confluenceUrl"
+                    className="block text-sm font-medium mb-1"
+                  >
                     Confluence Base URL
                   </label>
                   <input
@@ -246,7 +286,10 @@ export function SettingsModal({ isOpen, onClose }: Props) {
                 </div>
 
                 <div>
-                  <label htmlFor="confluencePat" className="block text-sm font-medium mb-1">
+                  <label
+                    htmlFor="confluencePat"
+                    className="block text-sm font-medium mb-1"
+                  >
                     Personal Access Token
                   </label>
                   <input
@@ -264,23 +307,30 @@ export function SettingsModal({ isOpen, onClose }: Props) {
 
                 <button
                   onClick={handleTestConfluence}
-                  disabled={testingConfluence || !confluenceUrl || !confluencePat}
+                  disabled={
+                    testingConfluence || !confluenceUrl || !confluencePat
+                  }
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {testingConfluence ? 'Testing...' : 'Test & Save Connection'}
+                  {testingConfluence ? "Testing..." : "Test & Save Connection"}
                 </button>
 
-                {confluenceTestResult === 'success' && (
-                  <p className="text-sm text-green-600">✓ Connection successful!</p>
+                {confluenceTestResult === "success" && (
+                  <p className="text-sm text-green-600">
+                    ✓ Connection successful!
+                  </p>
                 )}
-                {confluenceTestResult === 'error' && (
-                  <p className="text-sm text-red-600">✗ Connection failed. Check URL and PAT.</p>
+                {confluenceTestResult === "error" && (
+                  <p className="text-sm text-red-600">
+                    ✗ Connection failed. Check URL and PAT.
+                  </p>
                 )}
               </div>
             ) : (
               <div>
                 <p className="text-sm text-gray-600 mb-2">
-                  Connected to Confluence. Your PAT is stored securely in the system keychain.
+                  Connected to Confluence. Your PAT is stored securely in the
+                  system keychain.
                 </p>
                 <button
                   onClick={handleDisconnectConfluence}
@@ -297,7 +347,10 @@ export function SettingsModal({ isOpen, onClose }: Props) {
             <h3 className="text-lg font-semibold mb-3">Ollama (Local LLM)</h3>
             <div className="space-y-3">
               <div>
-                <label htmlFor="ollamaUrl" className="block text-sm font-medium mb-1">
+                <label
+                  htmlFor="ollamaUrl"
+                  className="block text-sm font-medium mb-1"
+                >
                   Ollama URL
                 </label>
                 <input
@@ -310,7 +363,10 @@ export function SettingsModal({ isOpen, onClose }: Props) {
               </div>
 
               <div>
-                <label htmlFor="model" className="block text-sm font-medium mb-1">
+                <label
+                  htmlFor="model"
+                  className="block text-sm font-medium mb-1"
+                >
                   Model
                 </label>
                 <input
@@ -322,7 +378,8 @@ export function SettingsModal({ isOpen, onClose }: Props) {
                   placeholder="llama3.2"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Model must be pulled in Ollama first (e.g., ollama pull llama3.2)
+                  Model must be pulled in Ollama first (e.g., ollama pull
+                  llama3.2)
                 </p>
               </div>
             </div>

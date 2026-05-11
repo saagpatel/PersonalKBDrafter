@@ -1,148 +1,153 @@
 # PersonalKBDrafter — Portfolio Disposition
 
-**Status:** Smoke Frozen — the app builds and runs locally, but the
-release-readiness checklist requires operator-provided live access to
-real Jira and Confluence Data Center instances and a local Ollama
-service. Do not surface for routine review until smoke is run.
+**Status:** Active — the canonical `origin/main` (saagpatel) is the
+working state. The product surface is real but minimal at HEAD;
+substantive functional work that previously existed under the
+`saagar210` account never propagated to canonical and lives only on
+side branches. Disposition is **not** Release Frozen / Smoke Frozen
+yet.
+
+> **Audience:** anyone resuming PersonalKBDrafter work, or wondering
+> why the prior version of this file cited commits that are not on
+> `origin/main`.
 
 ---
 
-## Why this file exists
+## Correction notice
 
-Portfolio operating system has been surfacing PersonalKBDrafter as a
-row needing review. The codebase is in a healthy, feature-complete
-state for v0.1 — recent commits added Confluence base-URL
-persistence, Jira ADF content parsing, and settings persistence — but
-the row keeps cycling because the disposition is unclear.
+A previous version of this doc (shipped in PR #15) claimed:
 
-This file resolves it.
+- Recent meaningful commits `feb7c08`, `9e6c2bd`, `3cf39ef`
+  (Confluence persistence, Jira ADF parsing, settings persistence)
+  were on `main`.
+- A `docs/release-readiness.md` and `docs/manual-smoke-walkthrough.md`
+  defined the release gates.
+- The repo was **Smoke Frozen** waiting on operator access to real
+  Jira / Confluence / Ollama.
 
----
+All three claims were based on reading the wrong remote.
 
-## Why "Smoke Frozen" instead of "Release Frozen"
+The cited commits are on `legacy-origin/main` (the frozen `saagar210`
+account's `main`), not on `origin/main` (`saagpatel`). The cited
+docs are not on `origin/main` either — they exist only on the
+`codex/chore/bootstrap-codex-os` feature branch. The "Smoke Frozen"
+disposition assumed those release-gate docs were canonical; they're
+not.
 
-The other three frozen repos (DesktopPEt, ContentEngine, AIGCCore)
-are **signing-frozen**: artifact exists, signing credentials are the
-gate. They have similar shape so the operator can batch them through
-signing in one session.
-
-PersonalKBDrafter is different. The gate is **smoke validation on
-real enterprise systems**:
-
-- Local Ollama service running with a pulled model (e.g., `llama3.2`)
-- Jira Data Center URL + PAT with access to a real ticket
-- Confluence Data Center URL + PAT with access to a non-production
-  space
-
-Until those three are simultaneously available to the operator,
-nobody can complete `docs/manual-smoke-walkthrough.md`. Until that
-walkthrough is run, the release-readiness checklist
-(`docs/release-readiness.md`) cannot be marked complete. The artifact
-builds; nobody knows if it works against real systems.
-
-That's a different shape of frozen — and a different unblock
-trigger. It does not co-batch with Apple signing.
+This file replaces the prior disposition. **The Smoke Frozen
+label was wrong.** The repo is in an earlier state than that
+disposition implied.
 
 ---
 
-## Current state in one paragraph
+## What is actually on `origin/main`
 
-PersonalKBDrafter is a Tauri 2 + Rust + React/TypeScript desktop app
-for IT support / DevOps / technical writers who want to draft
-Confluence knowledge-base articles from Jira tickets using a local
-LLM. It pulls ticket content (including ADF-formatted comments and
-descriptions), runs a local Ollama model to draft a KB article, and
-publishes to Confluence. Credentials persist via Tauri-side storage.
-The release-readiness checklist is captured. The manual smoke
-walkthrough is captured. Both are unrun.
+Confirmed via `git ls-tree -r origin/main` and
+`git log --oneline origin/main`:
 
-For full detail:
-- `README.md`
-- `docs/release-readiness.md`
-- `docs/manual-smoke-walkthrough.md`
+- Tauri 2 + Rust + React/TypeScript source code, including
+  `src-tauri/src/commands/articles.rs`, `confluence.rs`,
+  `drafting.rs`, `jira.rs`, and friends.
+- TypeScript bindings (`Article.ts`, `ArticleStatus.ts`,
+  `FlaggedSection.ts`, `QualityScore.ts`, `Template.ts`).
+- Standard portfolio chore scaffolding: `LICENSE`, `Makefile`,
+  `CHANGELOG.md`, `.codex/`, `.github/`, `.husky/`, etc.
+- `docs/PORTFOLIO-DISPOSITION.md` (this file, replacing the prior).
+- **Not** present on `origin/main`: `docs/release-readiness.md`,
+  `docs/manual-smoke-walkthrough.md`, or the Confluence-base-URL /
+  Jira-ADF-parsing / settings-persistence functional commits cited
+  in the prior disposition.
+
+The product surface that exists on `origin/main` is real — it's a
+working Tauri shell with Jira/Confluence command scaffolding — but
+it's earlier than the prior disposition implied.
+
+---
+
+## What's on `legacy-origin/main` and the codex branches
+
+`legacy-origin/main` is the frozen saagar210 account's `main`. It
+diverged from `origin/main`:
+
+- 3 codex bootstrap commits are on `legacy-origin/main` that are not
+  on `origin/main`.
+- The `codex/chore/bootstrap-codex-os` feature branch (which exists
+  on both `legacy-origin` and `origin`) is where the
+  `release-readiness.md` and `manual-smoke-walkthrough.md` docs
+  live.
+- The cited functional commits `feb7c08`, `9e6c2bd`, `3cf39ef` are
+  on a saagar210-side branch and were never brought to canonical
+  `origin/main`.
+
+**Operator action recommended (not auto-resolved by Claude Code):**
+audit what work exists on the legacy-origin side and decide whether
+to bring it forward or accept the loss. Same pattern as the
+FreeLanceInvoice correction — the saagar210 → saagpatel migration
+may have left work behind in multiple repos.
+
+---
+
+## Why "Active" instead of other dispositions
+
+- **Active** — correct. The canonical `origin/main` has a working
+  product shell but is missing the polish work that gives it its
+  release-candidate framing. The next move is operator decision-time:
+  audit legacy-origin, bring forward what should land, then re-assess.
+- **Release Frozen (signing)** — wrong. Apple signing is not the gate;
+  the gate is "decide what should be on `main` first."
+- **Smoke Frozen** — wrong. The smoke walkthrough doc isn't on `main`;
+  the prior disposition's whole premise was misread.
+- **Cold Storage / Archived** — wrong. The product surface is real and
+  there's no decision to stop.
 
 ---
 
 ## Portfolio operating system instructions
 
-| Aspect | Posture |
-|---|---|
-| Portfolio status | `Smoke Frozen` (subcategory of Release Frozen) |
-| Review cadence | Suspend overdue counting |
-| Resurface conditions | (a) operator gains simultaneous access to Ollama + Jira DC + Confluence DC test space, (b) operator decides to ship without real-system smoke (not currently planned — every release-readiness gate explicitly requires it), or (c) operator dependabot-clears the 5 open PRs (#8–#12) as a hygiene pass |
-| Co-batch with | **Not** the signing-frozen cluster (DesktopPEt / ContentEngine / AIGCCore) — different unblock trigger |
+| Aspect               | Posture                                                                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Portfolio status     | `Active`                                                                                                                                                                 |
+| Critical follow-up   | Audit `legacy-origin/main` and the `codex/*` branches; decide what to bring forward to `origin/main`                                                                     |
+| Review cadence       | Resume normal cadence — this row needs decision-time                                                                                                                     |
+| Resurface conditions | (a) operator completes the legacy-origin audit and the canonical state on `origin/main` matches intent, (b) only then re-assess for Release Frozen / Smoke Frozen / etc. |
+| Co-batch with        | The legacy-origin sweep itself, which may need to span multiple repos                                                                                                    |
 
 ---
 
-## Unblock trigger (operator)
+## Why this mistake happened (general lesson)
 
-When the operator has all three integrations ready:
+The local clone of this repo had `main` tracking `legacy-origin/main`,
+not `origin/main`. When the prior disposition analysis ran
+`git log`, `git ls-tree`, etc., the implicit reference resolution
+returned `legacy-origin/main` results, but the commands' output was
+written into the doc as if it described `origin/main`. The
+disposition's specific commit/file citations were therefore wrong,
+even though the high-level product story was largely accurate.
 
-1. Start Ollama locally with a pulled model.
-2. Confirm Jira DC PAT and Confluence DC PAT are valid against the
-   chosen test ticket and space.
-3. Run `npm run tauri dev` to launch the dev build.
-4. Walk every step of `docs/manual-smoke-walkthrough.md`. Record the
-   Jira ticket key, Confluence space, Ollama model, and outcome per
-   the checklist.
-5. If all steps pass, mark the release-readiness checklist complete
-   and tag a release. If any step fails, the failure mode determines
-   whether the gate is real (functional regression) or environmental
-   (token scope, missing API endpoint on DC version).
-6. Triage the 5 open dependabot PRs (#8–#12) — most are routine
-   transitive bumps that can land together.
+This is the **second** disposition in this session affected by the
+same legacy-origin / origin misread (the first was FreeLanceInvoice,
+corrected in its own PR). Worth treating as a session-level pattern:
 
-Estimated operator time once integrations are in hand: ~45 minutes
-for the smoke walkthrough + ~30 minutes for the dependabot triage.
-
----
-
-## Reactivation procedure (for the next code session)
-
-When portfolio operating system flips this row to `Active`:
-
-1. Note that `legacy-origin` remote points at `saagar210/PersonalKBDrafter`
-   (the pre-migration GitHub account) and is preserved for historical
-   reference. **Do not push to `legacy-origin`.** Use `origin`
-   (`saagpatel/PersonalKBDrafter`) for everything.
-2. Delete the stale `codex/*` branches that pre-date the most recent
-   meaningful commits (`feb7c08`, `9e6c2bd`, `3cf39ef`). They are
-   merged-history artifacts.
-3. Re-run `npm ci && npm run lint && npm run build && cd src-tauri
-   && cargo test --verbose && cargo clippy -- -D warnings` to
-   confirm the toolchain still works after the freeze.
-4. Only then proceed to the smoke walkthrough.
-
----
-
-## Why Smoke Frozen is the right disposition
-
-- **Active** — wrong. The product surface is complete; pushing more
-  features now compounds the un-validated surface without addressing
-  the validation gate.
-- **Cold Storage** — wrong. The code works (recent commits prove
-  it), and the readiness docs exist. Calling it "cold" misrepresents
-  the state.
-- **Archived / Wind-down** — wrong. The release-readiness checklist
-  exists specifically because someone meant to ship; nothing has been
-  abandoned.
-- **Release Frozen (signing)** — wrong. Apple signing is not the
-  gate; enterprise-system smoke validation is. Co-batching would
-  send the operator looking for the wrong credentials.
-- **Smoke Frozen** — correct. The gate is "run the smoke against
-  real systems," not "run a packaging script." Distinct enough from
-  signing-frozen to warrant its own label.
+- Any repo with both `origin` and `legacy-origin` remotes is at
+  risk of disposition mismatch.
+- The fix in operator-side tooling is to **always use the literal
+  `origin/<branch>` form** in disposition analysis.
+- Verified-correct so far: Relay (commit `ab85e88` confirmed on
+  `origin/main`).
+- Still to verify: DeepTank, Nexus, OrbitForge stale dup, the
+  stale IncidentWorkbench dup at `ITPRJsViaClaude/`. For each:
+  check whether commits/files cited in their dispositions are
+  actually on `origin/<branch>` rather than `legacy-origin/<branch>`.
 
 ---
 
 ## Last known reference
 
-| Field | Value |
-|---|---|
-| Last meaningful commit on `main` | `feb7c08` fix(confluence): persist base urls for reconnects |
-| Default branch | `main` |
-| Build verification status | green (per release-readiness.md gates) |
-| Smoke validation status | **Not yet run** |
-| Open dependabot PRs | #8 – #12 |
-| Blocker | Simultaneous operator access to Ollama + Jira DC + Confluence DC test space |
-| Migration note | `legacy-origin` points at the frozen `saagar210` account; do not push there |
+| Field                                         | Value                                                                                                                   |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Last commit on `origin/main`                  | `d49c1b1` docs: portfolio disposition + esbuild pnpm workspace fix (#15) — note this file replaces what that PR shipped |
+| Functional code on `origin/main`              | Yes (Tauri shell + Jira/Confluence command scaffolding)                                                                 |
+| Release-readiness docs on `origin/main`       | No (on codex branch only)                                                                                               |
+| `legacy-origin/main` diverged                 | Yes — 3 codex bootstrap commits not yet on canonical                                                                    |
+| Functional commits cited in prior disposition | On legacy-origin or codex branch, **not on canonical `origin/main`**                                                    |
+| Migration note                                | Local clone may track `legacy-origin/main` by accident — verify with `git branch -vv` before relying on branch state    |

@@ -23,3 +23,43 @@
 ## Verification Contract
 - Canonical commands are in `.codex/verify.commands`.
 - Use `.codex/scripts/run_verify_commands.sh` for deterministic execution.
+
+<!-- portfolio-context:start -->
+# Portfolio Context
+
+## What This Project Is
+
+PersonalKBDrafter is a Tauri desktop app that turns Jira tickets into Confluence-ready knowledge-base articles using a local Ollama model. It pulls ticket context, drafts structured articles, scans for sensitive data, scores quality, previews Markdown, and publishes to Confluence after review.
+
+## Current State
+
+The repo is active IT workflow tooling. Existing local changes include PR-template metadata and an untracked lockfile, so context recovery should remain documentation-only.
+
+## Stack
+
+| Layer | Technology |
+|-------|------------|
+| Desktop runtime | Tauri 2 |
+| Language | TypeScript + Rust |
+| AI inference | Ollama (local, any compatible model) |
+| Integrations | Jira REST API, Confluence REST API |
+| UI | React + Tailwind CSS |
+
+## How To Run
+
+```bash
+npm run tauri dev
+```
+
+## Known Risks
+
+- Jira and Confluence credentials are sensitive; do not commit secrets or local config.
+- The local LLM privacy promise matters; avoid cloud inference without an explicit product change.
+- Security scanning must run before publishing generated articles.
+- Keep PR-template and lockfile drift separate from drafting/publishing behavior changes.
+
+## Next Recommended Move
+
+Resolve PR-template and lockfile drift separately, then verify Jira pull, local draft generation, sensitive-data scan, quality scoring, preview, and Confluence publish flow before shipping changes.
+
+<!-- portfolio-context:end -->

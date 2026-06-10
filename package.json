@@ -43,7 +43,7 @@
     "@codemirror/view": "^6.39.14",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.21",
-    "@tauri-apps/api": "^2",
+    "@tauri-apps/api": "2.11.0",
     "codemirror": "^6.0.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -54,24 +54,24 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@commitlint/cz-commitlint": "^19.8.1",
+    "@lhci/cli": "^0.15.1",
     "@tailwindcss/typography": "^0.5.19",
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "2.11.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
-    "typescript": "~5.8.3",
-    "vite": "^7.0.4",
-    "vitest": "^4.0.18",
-    "@commitlint/cli": "^19.8.1",
-    "@commitlint/config-conventional": "^19.8.1",
-    "@commitlint/cz-commitlint": "^19.8.1",
-    "@lhci/cli": "^0.15.1",
     "commitizen": "^4.3.1",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4",
+    "vitest": "^4.0.18"
   },
   "config": {
     "commitizen": {
